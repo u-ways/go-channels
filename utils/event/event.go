@@ -1,16 +1,18 @@
 package event
 
-import "ue21/utils/color"
+import . "ue21/utils/color"
 
-var Sleep =               color.Yellow + "%s is sleeping. (no patients)" + color.Reset
-var WakeUp =              color.Yellow + "%s woke up. Someone rang the clinic desk call bell!" + color.Reset
-var RequestTreatment =    color.Blue + "%s requested a treatment." + color.Reset
-var DentistNotBusy =      color.Green + "%s will be treated right away. (Dentist is not busy)" + color.Reset
-var WaitingForTreatment = color.Red + "%s have to wait for treatment in the waiting room. (Dentist is busy)" + color.Reset
-var Treat =               color.Green + "%s is treating a patient." + color.Reset
-var GettingTreated =      color.Green + "%s is getting treated." + color.Reset
-var CheckTeeth =          color.Purple + "%s checks patient teeth..." + color.Reset
-var ShineTeeth =          color.Purple + "%s has shiny teeth!" + color.Reset
-var SaysThankYou =        color.Purple + "%s thanks the dentist!" + color.Reset
-var LeaveClinic =         color.Gray + "%s is leaving the clinic."  + color.Reset
-var OutOfSync =           color.Red + "Wait! Are you sure you're a doctor???" + color.Reset
+var GoesToSleep = 			Yellow + "%s is sleeping. (no patients)" + Reset
+var WakesUp = 				Yellow + "%s woke up." + Reset
+var RequestTreatment = 		Blue + "%s requested a treatment." + Reset
+var DentistNotBusy = 		Green + "%s will be treated right away. (Dentist is not busy; I rang the clinic desk call bell to wake the dentist up!)" + Reset
+var WaitingForTreatment = 	Red + "%s have to wait for treatment in the waiting room. (Dentist is busy treating another patient)" + Reset
+var StartTreatingPatient = 	Green + "%s is treating the patient." + Reset
+var IsGettingTreated = 		Yellow + "%s is getting treated. (They have been put to sleep until surgery is complete)" + Reset
+var ChecksPatientTeeth = 	Purple + "%s finished the surgery! Dentist checks patient teeth <=" + Reset
+var ShineTeeth = 			Purple + "=> %s has shiny teeth!" + Reset
+var LeaveClinic = 			Gray + "%s is leaving the clinic." + Reset
+
+var TreatmentMustBeInSync = Red + "Wait! Are you sure you're a dentist???" + Reset
+var TreatmentIsComplete = 	Red + "Aren't we finished? Can I leave please?" + Reset
+var GetOffTheChair = 		Red + "We're done here, can you get off the chair please?" + Reset

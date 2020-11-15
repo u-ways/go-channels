@@ -1,12 +1,12 @@
 package main
 
 import (
+	. "go-channels/utils/event"
+	. "go-channels/utils/log"
+	. "go-channels/utils/state"
 	"math/rand"
 	"runtime"
-	"time"
-	"ue21/utils/event"
-	"ue21/utils/log"
-	"ue21/utils/state"
+	. "time"
 )
 
 /** dentist **********************************************************/
@@ -15,87 +15,90 @@ func dentist(wait <-chan chan int, dent <-chan chan int) {
 	for {
 		select {
 		case nextPatient := <-wait:
-			// Treat the FIFO patient in the waiting room
 			treat(nextPatient)
 		default:
 			// Sleep when no patients found in the waiting room
-			log.Dentist(event.Sleep)
+			Dentist(WentToSleep)
 			// But wake up when a patient shows up and requests a treatment
-			patientArrived := <-dent
-			log.Dentist(event.WakeUp)
-			// Treat the newly arrived patient
-			treat(patientArrived)
+			newlyArrivedPatient := <-dent
+			Dentist(WakesUp)
+			treat(newlyArrivedPatient)
 		}
 	}
 }
 
-func treat(patient chan<- int) {
+func treat(patient chan int) {
+	Dentist(StartTreatingPatient)
+
+	patient <- START
+	// Emulate dentist treatment activity
+	dentistTreatmentActivity()
+
+	// Dentist making sure patient has shinny teeth
+	Dentist(ChecksPatientTeeth)
+	patient <- QA
+
+	// Handshake to acknowledge treatment is complete
+	Accept(<-patient, FINISH, GetOffTheChair)
+	patient <- FINISH
+}
+
+// dentistTreatmentActivity is implemented as a time-consuming action (i.e. pausing
+// the current goroutine based on maximum and minimum "treatment" time.)
+func dentistTreatmentActivity() {
 	const minDuration = 1
 	const maxDuration = 3
 
-	log.Dentist(event.Treat)
+	random := rand.New(rand.NewSource(Now().UnixNano()))
+	treatmentTime := Duration(minDuration+random.Intn(maxDuration)) * Second
 
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	treatmentTime := time.Duration(minDuration+random.Intn(maxDuration)) * time.Second
-
-	patient <- state.START
-	// Dentist activity (treatment time)
-	time.Sleep(treatmentTime)
-
-	patient <- state.QA
-	// Dentist making sure patient has shinny teeth
-	log.Dentist(event.CheckTeeth)
-
-	patient <- state.FINISH
-	// Let the dentist rest for a bit
-	time.Sleep(time.Second)
+	Sleep(treatmentTime)
 }
 
 /** patient **********************************************************/
 
 func patient(wait chan<- chan int, dent chan<- chan int, id int) {
-	log.Patient(id, event.RequestTreatment)
+	Patient(id, RequestTreatment)
 
-	// Create an appointed treatment channel
+	// Creates an appointed treatment channel
 	treatment := make(chan int)
 
 	select {
 	// Request treatment (wakes up the dentist if asleep)
 	case dent <- treatment:
-		log.Patient(id, event.DentistNotBusy)
+		Patient(id, DentistNotBusy)
 		receiveTreatment(id, treatment)
 	default:
 		// Dentist is busy, go to the waiting room and wait (i.e. sleep)
 		wait <- treatment
-		log.Patient(id, event.WaitingForTreatment)
-		// Wait until you start receiving the treatment
+		Patient(id, WaitingForTreatment)
 		receiveTreatment(id, treatment)
 	}
 
 	close(treatment)
-	log.Patient(id, event.LeaveClinic)
 }
 
-func receiveTreatment(id int, treatment <-chan int) {
-	accept(<-treatment, state.START)
-	log.Patient(id, event.GettingTreated)
+func receiveTreatment(id int, treatment chan int) {
+	// Wait until you start receiving the treatment
+	Accept(<-treatment, START, TreatmentMustBeInSync)
 
-	accept(<-treatment, state.QA)
-	log.Patient(id, event.ShineTeeth)
+	// When START is received, dentist start the treatment
+	Patient(id, IsGettingTreated)
 
-	accept(<-treatment, state.FINISH)
-	log.Patient(id, event.SaysThankYou)
-}
+	// Patient "sleeps" until operation is complete (i.e. gets blocked)
+	Accept(<-treatment, QA, TreatmentMustBeInSync)
 
-func accept(operation int, expected int) {
-	if operation != expected {
-		panic(event.OutOfSync)
-	}
+	// When QA is received, dentist asks the Patient to smile.
+	Patient(id, ShineTeeth)
+
+	treatment <- FINISH
+	Patient(id, LeaveClinic)
+	Accept(<-treatment, FINISH, TreatmentIsComplete)
 }
 
 func main() {
-	const maxThreads = 10
-	const numberOfPatients = 20
+	const maxThreads = 5
+	const numberOfPatients = 10
 	const channelSize = 5
 
 	runtime.GOMAXPROCS(maxThreads)
@@ -107,12 +110,12 @@ func main() {
 
 	go dentist(wait, dent)
 
-	time.Sleep(2 * time.Second)
+	Sleep(2 * Second)
 
 	for i := 1; i <= numberOfPatients; i++ {
 		go patient(wait, dent, i)
-		time.Sleep(time.Second)
+		Sleep(Second)
 	}
 
-	time.Sleep(numberOfPatients * 3 * time.Second)
+	Sleep(3 * numberOfPatients * Second)
 }
