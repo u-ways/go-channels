@@ -7,6 +7,7 @@ var Red     = "\033[31m"
 var Green   = "\033[32m"
 var Yellow  = "\033[33m"
 var Blue    = "\033[34m"
+var Cyan    = "\033[36m"
 var Purple  = "\033[35m"
 var Gray    = "\033[37m"
 
@@ -17,6 +18,7 @@ func init() {
 		Green = ""
 		Yellow = ""
 		Blue = ""
+		Cyan = ""
 		Purple = ""
 		Gray = ""
 	}
